@@ -18,6 +18,9 @@ import json5
 import tomlkit
 
 URL = 'https://ecs.prod.runlayer.com/mcp'
+# Exact ECS unified dynamic plugin endpoint verified through Runlayer metadata.
+# Do not accept arbitrary plugin UUIDs or tenants as equivalent.
+ACCEPTED_URLS = {URL, 'https://ecs.prod.runlayer.com/api/v1/proxy/plugins/a9d3ab20-4f5f-4d7b-a7b2-7b2b6f1d0d44/mcp'}
 NAME = 'runlayer-plugin'
 CLIENTS = ('codex', 'cursor', 'claude_code', 'vscode', 'claude_desktop')
 MAX_SIZE = 2_000_000
@@ -123,7 +126,7 @@ def plan(text, key, kind):
     servers = doc.get(key, {})
     if not isinstance(servers, dict):
         raise ValueError('invalid server collection')
-    matches = [v for v in servers.values() if isinstance(v, dict) and v.get('url') == URL]
+    matches = [v for v in servers.values() if isinstance(v, dict) and isinstance(v.get('url'), str) and v.get('url') in ACCEPTED_URLS]
     if matches:
         disabled = all(v.get('enabled') is False or v.get('disabled') is True for v in matches)
         return ('configured_disabled' if disabled else 'already_configured'), None

@@ -10,6 +10,14 @@ spec.loader.exec_module(helper)
 
 
 class InstallerTests(unittest.TestCase):
+    def test_exact_unified_plugin_endpoint_only(self):
+        legacy = next(url for url in helper.ACCEPTED_URLS if url != helper.URL)
+        source = json.dumps({'mcpServers': {'existing': {'url': legacy}}})
+        self.assertEqual(helper.plan(source, 'mcpServers', 'json'), ('already_configured', None))
+        for url in (legacy.replace('ecs.prod', 'demo'), legacy.replace('a9d3ab20', '00000000'), legacy + '?token=untrusted', legacy + '/extra'):
+            source = json.dumps({'mcpServers': {helper.NAME: {'url': url}}})
+            self.assertEqual(helper.plan(source, 'mcpServers', 'json'), ('name_conflict', None))
+
     def test_client_argument_formats_and_injection_rejection(self):
         self.assertEqual(helper.parse_clients(['claude_code,codex,cursor']), ['claude_code','codex','cursor'])
         self.assertEqual(helper.parse_clients(['codex','cursor','codex']), ['codex','cursor'])
