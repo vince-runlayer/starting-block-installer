@@ -191,15 +191,26 @@ def configure(client, home, platform, apply=False):
         return {'client': client, 'status': 'manual_review', 'next': 'Configuration could not be safely updated; no credentials were printed.'}
 
 
+def parse_clients(values):
+    clients = [item.strip() for value in values for item in value.split(',') if item.strip()]
+    if not clients or any(client not in CLIENTS for client in clients):
+        raise ValueError('unsupported client selection')
+    return list(dict.fromkeys(clients))
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--clients', nargs='+', choices=CLIENTS, required=True)
+    parser.add_argument('--clients', nargs='+', required=True)
     parser.add_argument('--apply', action='store_true', help='Add missing user-scope configuration, with backups')
     args = parser.parse_args()
+    try:
+        selected = parse_clients(args.clients)
+    except ValueError:
+        parser.error('Choose only: ' + ', '.join(CLIENTS))
     # Non-default locations require an explicit adapter rather than writing the wrong profile.
     overrides = {'codex': 'CODEX_HOME', 'vscode': 'VSCODE_PORTABLE', 'claude_code': 'CLAUDE_CONFIG_DIR'}
     results = []
-    for client in dict.fromkeys(args.clients):
+    for client in selected:
         if os.environ.get(overrides.get(client, '__unused_starting_block_override__')):
             results.append({'client': client, 'status': 'custom_location', 'next': 'Use the client-specific guide for your custom configuration location.'})
         else:

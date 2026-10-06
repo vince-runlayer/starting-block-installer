@@ -10,6 +10,13 @@ spec.loader.exec_module(helper)
 
 
 class InstallerTests(unittest.TestCase):
+    def test_client_argument_formats_and_injection_rejection(self):
+        self.assertEqual(helper.parse_clients(['claude_code,codex,cursor']), ['claude_code','codex','cursor'])
+        self.assertEqual(helper.parse_clients(['codex','cursor','codex']), ['codex','cursor'])
+        for values in ([], [';echo'], ['codex;echo'], ['unknown'], ['*']):
+            with self.assertRaises(ValueError):
+                helper.parse_clients(values)
+
     def test_comment_preservation_and_idempotence(self):
         source = '''{// Keep root\n "servers": { // Keep server\n "other": {"url":"https://other", "headers":{"token":"PRIVATE"}},\n }, "settings": true}\n'''
         status, updated = helper.plan(source, 'servers', 'json')
